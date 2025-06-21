@@ -15,6 +15,7 @@ KARAKTER_LIST = [
     "tung_tung_sahur"
     "mail"
     "kak_ros"
+    "bg1"
 ]
 
 # Kata kunci hook & hashtag yang digunakan di judul dan deskripsi video
