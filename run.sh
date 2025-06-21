@@ -1,26 +1,20 @@
+# run.sh
+
 #!/data/data/com.termux/files/usr/bin/bash
 
-echo "🕗 Menjalankan bot YouTube Shorts $(date)"
+# Jalankan semua tahapan otomatis
 
-# 1. Generate cerita absurd
-echo "📚 Membuat cerita..."
+echo "📚 Generate cerita..."
 python generate_story.py
 
-# 2. Gabungkan gambar karakter
-echo "🎨 Menggabungkan gambar..."
+echo "🎨 Gabungkan gambar..."
 python compose_image.py
 
-# 3. Download audio dari playlist jika belum ada
-echo "🎵 Cek & ambil audio dari playlist..."
-yt-dlp -x --audio-format mp3 --playlist-items 1 -o "sounds/sound_%(upload_date)s.%(ext)s" "$(python3 -c 'import config; print(config.PLAYLIST_URL)')"
+echo "🎵 Ambil audio dari playlist..."
+python fetch_audio.py
 
-# 4. Buat video dari gambar + teks + sound
-echo "🎬 Membuat video..."
+echo "🎬 Buat video..."
 python make_video.py
 
-# 5. Upload ke YouTube Shorts
-echo "📤 Upload ke YouTube..."
-python upload_video.py
-
-echo "✅ Selesai: $(date)"
-
+echo "📤 Upload ke YouTube Shorts..."
+python upload_to_youtube.py
