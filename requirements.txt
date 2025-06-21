@@ -1,3 +1,5 @@
 pillow
 requests
 yt-dlp
+openai
+python-dotenv
