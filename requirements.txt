@@ -1,5 +1,5 @@
-pillow
+openai
 requests
 yt-dlp
-openai
+pillow
 python-dotenv
