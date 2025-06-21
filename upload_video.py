@@ -1,56 +1,33 @@
-# upload_video.py
+# upload_to_youtube.py
 
 import os
 import random
-import shlex
-from datetime import datetime
 import subprocess
-from config import KEYWORDS
-
-HASHTAGS = "#upinipin #tungtungtungsahur #funny #lucu #short #dontol"
-
-def ambil_terbaru(folder, ekstensi):
-    file_list = [f for f in os.listdir(folder) if f.endswith(ekstensi)]
-    if not file_list:
-        return None
-    file_list.sort()
-    return os.path.join(folder, file_list[-1])
+from config import OUTPUT_VIDEO, KEYWORDS
 
 def buat_judul():
-    hook = random.choice([
-        "GILA SIH INI!",
-        "INI NGAKAK PARAH!",
-        "KAMU NGGAK AKAN PERCAYA!",
-        "PLOT TWIST LUCU!",
-        "ASTAGA DONTOLNYA APAKAH..."
-    ])
-    keyword = random.choice(KEYWORDS)
-    # Bungkus judul dengan kutip satu agar aman dari Bash expansion
-    judul = f"{hook} {keyword} {HASHTAGS}"
-    return judul
+    hook = random.choice(KEYWORDS)
+    judul = f"{hook} bikin ngakak #upinipin #tungtungtungsahur #funny #lucu #short #dontol"
+    return judul[:95]  # YouTube Shorts title limit
 
-def upload_ke_youtube(video_path, judul):
-    if not video_path:
-        print("❌ Video tidak ditemukan")
+def upload_video():
+    if not os.path.exists(OUTPUT_VIDEO):
+        print("❌ Video belum ditemukan. Jalankan make_video.py dulu.")
         return
+
+    judul = buat_judul()
 
     cmd = [
         "youtube-upload",
         "--title", judul,
-        "--description", "Video absurd & lucu otomatis setiap hari!",
         "--privacy", "public",
-        video_path
+        "--shorts",
+        OUTPUT_VIDEO
     ]
 
-    # Gunakan shell=False agar aman dari karakter spesial seperti '!'
-    try:
-        subprocess.run(cmd, check=True)
-        print(f"✅ Video di-upload: {judul}")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Gagal upload: {e}")
+    print("📤 Mengupload video...")
+    subprocess.run(cmd)
+    print("✅ Video berhasil diupload!")
 
 if __name__ == "__main__":
-    video = ambil_terbaru("video", ".mp4")
-    judul = buat_judul()
-    upload_ke_youtube(video, judul)
-
+    upload_video()
