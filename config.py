@@ -1,7 +1,7 @@
 # config.py
 
 # Link playlist YouTube (isi dengan ID playlist kamu)
-PLAYLIST_URL = "https://www.youtube.com/playlist?list=YOUR_PLAYLIST_ID"
+PLAYLIST_URL = "https://www.youtube.com/playlist?list=SS"
 
 # Daftar karakter (nama file tanpa .png) yang ada di folder assets/karakter/
 KARAKTER_LIST = [
