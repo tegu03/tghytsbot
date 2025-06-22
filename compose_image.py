@@ -1,61 +1,48 @@
 # compose_image.py
-
-from PIL import Image, ImageDraw, ImageFont
 import os
-from config import KARAKTER_LIST, RESOLUTION, FONT_PATH, OUTPUT_IMAGE, OUTPUT_TEXT
+from PIL import Image
+from datetime import datetime
 
-def gabungkan_gambar_karakter(karakter_list, ukuran=(1080, 1920)):
-    canvas = Image.new("RGB", ukuran, (255, 255, 255))
-    lebar, tinggi = ukuran
-    total = len(karakter_list)
-    ukuran_karakter = lebar // total
+OUTPUT_TEXT = "output/cerita.txt"
+KARAKTER_FOLDER = "karakter"
+OUTPUT_IMAGE = f"video/frame_{datetime.now().strftime('%Y%m%d_%H%M')}.jpg"
 
-    for i, nama in enumerate(karakter_list):
-        path = f"assets/karakter/{nama}.png"
-        if not os.path.exists(path):
-            print(f"⚠️ Gambar {path} tidak ditemukan")
-            continue
-        gambar = Image.open(path).convert("RGBA")
-        gambar = gambar.resize((ukuran_karakter, int(ukuran_karakter * 1.5)))
-        posisi = (i * ukuran_karakter, tinggi - gambar.height)
-        canvas.paste(gambar, posisi, gambar)
-
-    return canvas
-
-def tambahkan_teks(cerita, gambar):
-    draw = ImageDraw.Draw(gambar)
-    font = ImageFont.truetype(FONT_PATH, 48)
-
-    baris = cerita.split("\n")
-    y = 30
-    for line in baris:
-        draw.text((30, y), line, font=font, fill=(0, 0, 0))
-        y += 60
-    return gambar
+os.makedirs("video", exist_ok=True)
 
 def baca_karakter_dari_cerita():
     with open(OUTPUT_TEXT, "r") as f:
-        baris = f.readline()
-        karakter = baris.replace("[Karakter Utama: ", "").replace("]", "").strip()
-    return karakter
+        line = f.readline()
+        if "[Karakter Utama:" in line:
+            return line.strip().split(":")[1].replace("]", "").strip()
+    return "upin"
 
-def baca_cerita():
-    with open(OUTPUT_TEXT, "r") as f:
-        cerita = f.read().split("\n", 1)[-1].strip()
-    return cerita
+def gabungkan_gambar(gambar_list):
+    gambar_utama = Image.open(gambar_list[0]).resize((720, 1280))
+    canvas = Image.new("RGB", (720, 1280), (255, 255, 255))
+    canvas.paste(gambar_utama, (0, 0))
+
+    for i, path in enumerate(gambar_list[1:]):
+        img = Image.open(path).resize((200, 200))
+        canvas.paste(img, (50 + i*220, 1000))
+
+    canvas.save(OUTPUT_IMAGE)
+    return OUTPUT_IMAGE
 
 def buat_frame():
     karakter_utama = baca_karakter_dari_cerita()
-    cerita = baca_cerita()
-    karakter_lain = list(set(KARAKTER_LIST) - {karakter_utama})
-    karakter_acak = [karakter_utama] + karakter_lain[:2]
+    try:
+        utama_path = os.path.join(KARAKTER_FOLDER, f"{karakter_utama}.jpg")
+        lainnya = [f for f in os.listdir(KARAKTER_FOLDER) if f.endswith(".jpg") and not f.startswith(karakter_utama)]
+        lainnya_paths = [os.path.join(KARAKTER_FOLDER, f) for f in lainnya[:2]]
 
-    gambar = gabungkan_gambar_karakter(karakter_acak)
-    gambar = tambahkan_teks(cerita, gambar)
+        if not os.path.exists(utama_path):
+            raise FileNotFoundError(f"Gambar tidak ditemukan: {utama_path}")
 
-    os.makedirs("output", exist_ok=True)
-    gambar.save(OUTPUT_IMAGE)
-    print(f"✅ Gambar disimpan ke {OUTPUT_IMAGE}")
+        all_paths = [utama_path] + lainnya_paths
+        hasil = gabungkan_gambar(all_paths)
+        print(f"✅ Frame disimpan di: {hasil}")
+    except Exception as e:
+        print(f"❌ Gagal membuat frame: {e}")
 
 if __name__ == "__main__":
     buat_frame()
