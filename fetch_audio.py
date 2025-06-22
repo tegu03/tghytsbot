@@ -1,51 +1,72 @@
-# fetch_audio.py
+# upload_to_youtube.py
 
 import os
-import random
-import subprocess
-from config import PLAYLIST_URL, OUTPUT_AUDIO
+import sys
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+import pickle
 
-def unduh_audio():
-    os.makedirs("temp_audio", exist_ok=True)
-    print("🎵 Mengambil audio dari playlist...")
+from config import OUTPUT_VIDEO
 
-    # Ambil daftar video dari playlist
-    list_cmd = [
-        "yt-dlp", "--flat-playlist", "--print", "%(id)s", PLAYLIST_URL
-    ]
-    result = subprocess.run(list_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+# YouTube API scope
+SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+CREDENTIALS_FILE = "credentials/client_secret.json"
+TOKEN_FILE = "credentials/token.pickle"
 
-    if result.returncode != 0:
-        print("❌ Gagal mengambil daftar video. Pastikan playlist URL benar.")
-        print(result.stderr)
+def get_authenticated_service():
+    creds = None
+    if os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE, "rb") as token:
+            creds = pickle.load(token)
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                CREDENTIALS_FILE, SCOPES
+            )
+            creds = flow.run_local_server(port=0)
+
+        os.makedirs("credentials", exist_ok=True)
+        with open(TOKEN_FILE, "wb") as token:
+            pickle.dump(creds, token)
+
+    return build("youtube", "v3", credentials=creds)
+
+def upload_video(video_file, title="Short Video by Bot", description="", tags=None):
+    youtube = get_authenticated_service()
+
+    print("📤 Mengunggah video ke YouTube...")
+
+    body = {
+        "snippet": {
+            "title": title,
+            "description": description,
+            "tags": tags or ["short", "funny", "upinipin"],
+            "categoryId": "22"
+        },
+        "status": {
+            "privacyStatus": "public",
+            "selfDeclaredMadeForKids": False,
+        }
+    }
+
+    if not os.path.exists(video_file):
+        print(f"❌ File video tidak ditemukan: {video_file}")
         return
 
-    video_ids = result.stdout.strip().split("\n")
+    media_file = MediaFileUpload(video_file, chunksize=-1, resumable=True, mimetype="video/mp4")
+    request = youtube.videos().insert(part="snippet,status", body=body, media_body=media_file)
+    response = None
+    while response is None:
+        status, response = request.next_chunk()
+        if status:
+            print(f"⬆️ Upload {int(status.progress() * 100)}%")
 
-    if not video_ids or not video_ids[0].strip():
-        print("❌ Tidak ditemukan video dalam playlist.")
-        return
-
-    video_id = random.choice(video_ids)
-    url = f"https://www.youtube.com/watch?v={video_id}"
-
-    print(f"🎧 Mengunduh audio dari: {url}")
-
-    # Unduh audio dari video
-    audio_cmd = [
-        "yt-dlp", "-f", "bestaudio", "--extract-audio",
-        "--audio-format", "mp3", "-o", "temp_audio/audio.%(ext)s", url
-    ]
-    subprocess.run(audio_cmd)
-
-    source_path = "temp_audio/audio.mp3"
-    if not os.path.exists(source_path):
-        print("❌ Gagal mengunduh audio.")
-        return
-
-    os.makedirs(os.path.dirname(OUTPUT_AUDIO), exist_ok=True)
-    os.rename(source_path, OUTPUT_AUDIO)
-    print(f"✅ Audio disimpan sebagai: {OUTPUT_AUDIO}")
+    print(f"✅ Video berhasil diunggah! Video ID: {response['id']}")
 
 if __name__ == "__main__":
-    unduh_audio()
+    upload_video(OUTPUT_VIDEO, title="Short by AI Bot #upinipin #dontol")
