@@ -12,13 +12,25 @@ def buat_video():
         print("❌ Audio belum tersedia. Jalankan fetch_audio.py dulu.")
         return
 
-    gambar = ImageClip(OUTPUT_IMAGE).set_duration(MAX_DURATION)
-    audio = AudioFileClip(OUTPUT_AUDIO).subclip(0, MAX_DURATION)
+    try:
+        gambar = ImageClip(OUTPUT_IMAGE).set_duration(MAX_DURATION)
+    except Exception as e:
+        print(f"❌ Gagal memuat gambar: {e}")
+        return
 
-    video = CompositeVideoClip([gambar.set_audio(audio)])
-    os.makedirs("output", exist_ok=True)
-    video.write_videofile(OUTPUT_VIDEO, fps=24)
-    print(f"✅ Video berhasil disimpan ke {OUTPUT_VIDEO}")
+    try:
+        audio = AudioFileClip(OUTPUT_AUDIO).subclip(0, MAX_DURATION)
+    except Exception as e:
+        print(f"❌ Gagal memuat audio: {e}")
+        return
+
+    try:
+        video = CompositeVideoClip([gambar.set_audio(audio)])
+        os.makedirs(os.path.dirname(OUTPUT_VIDEO), exist_ok=True)
+        video.write_videofile(OUTPUT_VIDEO, fps=24)
+        print(f"✅ Video berhasil disimpan ke {OUTPUT_VIDEO}")
+    except Exception as e:
+        print(f"❌ Gagal membuat video: {e}")
 
 if __name__ == "__main__":
     buat_video()
